@@ -130,7 +130,7 @@ function render(rows){
 // It reads the sheet on every request, so updates appear within one poll.
 // While it's empty, the page falls back to the published CSV, which Google
 // caches for several minutes.
-const SCRIPT_URL = "";
+const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyPyeQkhnPxb7NKFFxLYU9erPnNlQXw_xJchg5wAi3fKlwUV2SVpEzMJtUBncVln4ZT/exec";
 const CSV = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRbhIXoLSF_X5Tzt6AYcGsIGXHTAmGI8fLpsS3F7r3aRydkaSuzd4hYYW_Nqiw1HVCMTRZiFmi5N63J/pub?output=csv";
 const LIVE = !!SCRIPT_URL;
 const POLL_MS = LIVE ? 5000 : 20000;
