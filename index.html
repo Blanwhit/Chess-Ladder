@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Ladder</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,400..800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#f4f2ee; --ink:#16161a; --mute:#8b8a86; --rule:#dcd9d2; --row:#ebe8e2;
+    --gold:#d9a521; --silver:#9ea7b0; --bronze:#b5693a;
+  }
+  @media (prefers-color-scheme: dark){
+    :root{ --bg:#121214; --ink:#efede8; --mute:#76757a; --rule:#2a2a2e; --row:#1b1b1e;
+      --gold:#d4a12a; --silver:#8d969f; --bronze:#a8653b; }
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{background:var(--bg);color:var(--ink)}
+  body{font-family:"Archivo",system-ui,sans-serif;font-variant-numeric:tabular-nums;
+    -webkit-font-smoothing:antialiased;padding:56px 20px 80px}
+  .wrap{max-width:560px;margin:0 auto}
+
+  /* podium */
+  .podium{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;align-items:end;margin-bottom:56px}
+  .step{display:flex;flex-direction:column;align-items:center;min-width:0}
+  .who{font-weight:650;font-size:17px;letter-spacing:-.01em;text-align:center;
+    max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-height:22px}
+  .pts{font-stretch:75%;font-weight:500;font-size:15px;color:var(--mute);margin:2px 0 10px;min-height:19px}
+  .block{width:100%;display:flex;justify-content:center;padding-top:14px;
+    font-stretch:62%;font-weight:800;font-size:44px;line-height:1;color:rgba(0,0,0,.28);
+    border-radius:3px 3px 0 0;transition:height .5s cubic-bezier(.2,.7,.2,1)}
+  .p1 .block{height:170px;background:var(--gold)}
+  .p2 .block{height:124px;background:var(--silver)}
+  .p3 .block{height:92px;background:var(--bronze)}
+  .p1 .who{font-size:20px}
+  .empty .block{opacity:.35}
+
+  /* list */
+  ol{list-style:none;border-top:2px solid var(--ink)}
+  li{display:grid;grid-template-columns:44px 1fr auto;align-items:baseline;
+    padding:13px 4px;border-bottom:1px solid var(--rule)}
+  li:nth-child(even){background:var(--row)}
+  .rk{font-stretch:75%;font-weight:600;color:var(--mute);font-size:15px}
+  .nm{font-weight:520;font-size:16px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;padding-right:12px}
+  .pt{font-stretch:75%;font-weight:700;font-size:17px;text-align:right;min-width:3ch}
+  li.new{animation:flash 1.2s ease-out}
+  @keyframes flash{from{background:color-mix(in srgb,var(--gold) 30%,transparent)}}
+  @media (max-width:420px){ .who{font-size:14px}.p1 .who{font-size:16px}.block{font-size:34px} }
+</style>
+</head>
+<body>
+<main class="wrap">
+  <section class="podium" id="podium">
+    <div class="step p2 empty"><div class="who"></div><div class="pts"></div><div class="block">2</div></div>
+    <div class="step p1 empty"><div class="who"></div><div class="pts"></div><div class="block">1</div></div>
+    <div class="step p3 empty"><div class="who"></div><div class="pts"></div><div class="block">3</div></div>
+  </section>
+  <ol id="list"></ol>
+</main>
+<script>
+const POINTS = {win:3, draw:2, loss:1};
+
+// "  jean-LUC_picard " -> key "jeanlucpicard", display "Jean Luc Picard"
+const keyOf = s => String(s||"").toLowerCase().normalize("NFKD").replace(/[̀-ͯ]/g,"").replace(/[^a-z0-9]/g,"");
+const pretty = s => String(s||"").replace(/[-_.]+/g," ").replace(/\s+/g," ").trim()
+  .toLowerCase().replace(/(^|\s)(\p{L})/gu,(m,a,b)=>a+b.toUpperCase());
+
+function outcome(r){
+  r = String(r||"").toLowerCase();
+  if (r.includes("draw") || r.includes("tie")) return "draw";
+  if (r.includes("1")) return "p1";
+  if (r.includes("2")) return "p2";
+  return null;
+}
+
+function standings(rows){
+  const P = new Map();               // key -> {pts, forms: Map(display->count)}
+  const touch = raw => {
+    const k = keyOf(raw); if (!k) return null;
+    if (!P.has(k)) P.set(k,{pts:0,forms:new Map()});
+    const p = P.get(k), d = pretty(raw);
+    p.forms.set(d,(p.forms.get(d)||0)+1);
+    return p;
+  };
+  for (const r of rows){
+    const res = outcome(r.result);
+    if (!res || keyOf(r.p1)===keyOf(r.p2)) continue;
+    const a = touch(r.p1), b = touch(r.p2);
+    if (!a || !b) continue;
+    if (res==="draw"){ a.pts+=POINTS.draw; b.pts+=POINTS.draw; }
+    else if (res==="p1"){ a.pts+=POINTS.win; b.pts+=POINTS.loss; }
+    else { b.pts+=POINTS.win; a.pts+=POINTS.loss; }
+  }
+  const list = [...P.values()].map(p=>({
+    name:[...p.forms.entries()].sort((x,y)=>y[1]-x[1])[0][0], pts:p.pts
+  })).sort((a,b)=>b.pts-a.pts || a.name.localeCompare(b.name));
+  list.forEach((p,i)=>{ p.rank = i && p.pts===list[i-1].pts ? list[i-1].rank : i+1; });
+  return list;
+}
+
+let prev = new Map();
+function render(rows){
+  const s = standings(rows);
+  const steps = {1:".p1",2:".p2",3:".p3"};
+  [0,1,2].forEach(i=>{
+    const el = document.querySelector(steps[i+1]), p = s[i];
+    el.classList.toggle("empty",!p);
+    el.querySelector(".who").textContent = p ? p.name : "";
+    el.querySelector(".pts").textContent = p ? p.pts : "";
+    el.querySelector(".block").textContent = p ? p.rank : i+1;
+  });
+  const ol = document.getElementById("list");
+  ol.replaceChildren(...s.map(p=>{
+    const li = document.createElement("li");
+    li.innerHTML = '<span class="rk"></span><span class="nm"></span><span class="pt"></span>';
+    li.children[0].textContent = p.rank;
+    li.children[1].textContent = p.name;
+    li.children[2].textContent = p.pts;
+    if (prev.size && prev.get(p.name)!==p.pts) li.classList.add("new");
+    return li;
+  }));
+  prev = new Map(s.map(p=>[p.name,p.pts]));
+}
+
+const CSV = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRbhIXoLSF_X5Tzt6AYcGsIGXHTAmGI8fLpsS3F7r3aRydkaSuzd4hYYW_Nqiw1HVCMTRZiFmi5N63J/pub?output=csv";
+const POLL_MS = 20000;
+
+function parseCSV(t){
+  const out=[]; let row=[], f="", q=false;
+  for (let i=0;i<t.length;i++){
+    const c=t[i];
+    if (q){ if (c==='"'){ if (t[i+1]==='"'){f+='"';i++;} else q=false; } else f+=c; }
+    else if (c==='"') q=true;
+    else if (c===',') { row.push(f); f=""; }
+    else if (c==='\n' || c==='\r'){ if (c==='\r'&&t[i+1]==='\n') i++; row.push(f); out.push(row); row=[]; f=""; }
+    else f+=c;
+  }
+  if (f||row.length){ row.push(f); out.push(row); }
+  return out;
+}
+
+let last = "";
+async function tick(){
+  try{
+    const r = await fetch(CSV + "&t=" + Date.now(), {cache:"no-store"});
+    if (!r.ok) return;
+    const text = await r.text();
+    if (text === last) return;
+    last = text;
+    const rows = parseCSV(text).slice(1).filter(r=>r.length>=4)
+      .map(r=>({ts:r[0], p1:r[1], p2:r[2], result:r[3]}));
+    render(rows);
+  }catch(e){}
+}
+tick();
+setInterval(tick, POLL_MS);
+document.addEventListener("visibilitychange", ()=>{ if (!document.hidden) tick(); });
+</script>
+</body>
+</html>
