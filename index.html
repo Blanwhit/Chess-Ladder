@@ -45,6 +45,7 @@
   .rk{font-stretch:75%;font-weight:600;color:var(--mute);font-size:15px}
   .nm{font-weight:520;font-size:16px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;padding-right:12px}
   .pt{font-stretch:75%;font-weight:700;font-size:17px;text-align:right;min-width:3ch}
+  .status{font-size:13px;color:var(--mute);text-align:center;margin:-36px 0 20px}
   li.new{animation:flash 1.2s ease-out}
   @keyframes flash{from{background:color-mix(in srgb,var(--gold) 30%,transparent)}}
   @media (max-width:420px){ .who{font-size:14px}.p1 .who{font-size:16px}.block{font-size:34px} }
@@ -57,6 +58,7 @@
     <div class="step p1 empty"><div class="who"></div><div class="pts"></div><div class="block">1</div></div>
     <div class="step p3 empty"><div class="who"></div><div class="pts"></div><div class="block">3</div></div>
   </section>
+  <p class="status" id="status" hidden></p>
   <ol id="list"></ol>
 </main>
 <script>
@@ -141,22 +143,72 @@ function parseCSV(t){
   return out;
 }
 
-let last = "";
+const CACHE_KEY = "ladder-csv";
+const statusEl = document.getElementById("status");
+const setStatus = msg => { statusEl.textContent = msg; statusEl.hidden = !msg; };
+
+// Google sometimes answers with an HTML error page (even with HTTP 200),
+// so only accept text that looks like the form's CSV.
+function toRows(text){
+  if (/^\s*</.test(text)) return null;
+  const all = parseCSV(text);
+  if (!all.length || all[0].length < 4) return null;
+  return all.slice(1).filter(r=>r.length>=4)
+    .map(r=>({ts:r[0], p1:r[1], p2:r[2], result:r[3]}));
+}
+
+// Google serves the published CSV from several servers that each cache it for
+// up to 5 minutes, so back-to-back fetches can alternate between a fresh copy
+// and an older one with fewer games. Never step back to fewer games unless the
+// bigger copy hasn't been served for longer than that cache window (meaning a
+// row really was deleted in the sheet).
+const STALE_MS = 6 * 60 * 1000;
+let last = "", lastCount = -1, lastSeen = 0;
+function show(text, seenAt = Date.now()){
+  if (text === last){ lastSeen = seenAt; return true; }
+  const rows = toRows(text);
+  if (!rows) return false;
+  if (rows.length < lastCount && seenAt - lastSeen < STALE_MS) return true; // stale copy, ignore
+  last = text; lastCount = rows.length; lastSeen = seenAt;
+  render(rows);
+  try{ localStorage.setItem(CACHE_KEY, JSON.stringify({text, at: seenAt})); }catch(e){}
+  return true;
+}
+
+// Show the last good copy right away so a refresh never starts blank.
+try{
+  const c = JSON.parse(localStorage.getItem(CACHE_KEY) || "null");
+  if (c && typeof c.text === "string") show(c.text, c.at || 0);
+}catch(e){}
+
+let timer = null, fails = 0, inflight = false;
+function schedule(ms){ clearTimeout(timer); timer = setTimeout(tick, ms); }
+
 async function tick(){
+  if (inflight) return;
+  inflight = true;
   try{
     const r = await fetch(CSV + "&t=" + Date.now(), {cache:"no-store"});
-    if (!r.ok) return;
+    if (!r.ok) throw new Error("HTTP " + r.status);
     const text = await r.text();
-    if (text === last) return;
-    last = text;
-    const rows = parseCSV(text).slice(1).filter(r=>r.length>=4)
-      .map(r=>({ts:r[0], p1:r[1], p2:r[2], result:r[3]}));
-    render(rows);
-  }catch(e){}
+    if (!show(text)) throw new Error("Response was not the expected CSV");
+    fails = 0;
+    setStatus("");
+    schedule(POLL_MS);
+  }catch(e){
+    fails++;
+    console.warn("Ladder fetch failed (attempt " + fails + "):", e);
+    // Retry quickly at first (1s, 2s, 4s, 8s…), never slower than the normal poll.
+    const wait = Math.min(1000 * 2 ** (fails - 1), POLL_MS);
+    setStatus(last ? "" : "Couldn't load standings — retrying…");
+    if (fails >= 3 && last) setStatus("Showing saved standings — reconnecting…");
+    schedule(wait);
+  }finally{
+    inflight = false;
+  }
 }
 tick();
-setInterval(tick, POLL_MS);
-document.addEventListener("visibilitychange", ()=>{ if (!document.hidden) tick(); });
+document.addEventListener("visibilitychange", ()=>{ if (!document.hidden){ fails = 0; tick(); } });
 </script>
 </body>
 </html>
