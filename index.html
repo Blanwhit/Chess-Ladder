@@ -55,13 +55,14 @@
   .cols,li{display:grid;grid-template-columns:44px 1fr 40px 40px 52px;align-items:baseline;padding:13px 4px}
   .cols{padding:0 4px 6px;border-bottom:2px solid var(--ink);font-stretch:75%;font-weight:600;font-size:12px;
     letter-spacing:.06em;text-transform:uppercase;color:var(--mute)}
-  .cols span:nth-child(n+3){text-align:right}
+  .cols span:nth-child(3),.cols span:nth-child(4){text-align:center}
+  .cols span:nth-child(5){text-align:right}
   ol{list-style:none}
   li{border-bottom:1px solid var(--rule)}
   li:nth-child(even){background:var(--row)}
   .rk{font-stretch:75%;font-weight:600;color:var(--mute);font-size:15px}
   .nm{font-weight:520;font-size:16px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;padding-right:12px}
-  .wn,.gm{font-stretch:75%;font-weight:500;font-size:14px;color:var(--mute);text-align:right;opacity:.85}
+  .wn,.gm{font-stretch:75%;font-weight:500;font-size:14px;color:var(--mute);text-align:center;opacity:.85}
   .pt{font-stretch:75%;font-weight:700;font-size:17px;text-align:right}
   .status{font-size:13px;color:var(--mute);text-align:center;margin:-36px 0 20px}
   li.new{animation:flash 1.2s ease-out}
