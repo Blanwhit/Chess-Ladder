@@ -20,15 +20,16 @@
   html,body{background:var(--bg);color:var(--ink)}
   body{font-family:"Archivo",system-ui,sans-serif;font-variant-numeric:tabular-nums;
     -webkit-font-smoothing:antialiased;padding:56px 20px 80px}
-  .page{max-width:1040px;margin:0 auto;display:grid;grid-template-columns:minmax(260px,360px) minmax(0,560px);
-    gap:72px;justify-content:center;align-items:start}
+  .page{max-width:1140px;margin:0 auto;display:grid;grid-template-columns:minmax(280px,480px) minmax(440px,560px);
+    gap:80px;justify-content:center;align-items:start}
   .wrap{min-width:0}
 
   /* report panel */
   .report{position:sticky;top:56px;display:flex;flex-direction:column;align-items:center;text-align:center}
-  .report h2{font-weight:700;font-size:26px;line-height:1.15;letter-spacing:-.015em;max-width:15ch;text-wrap:balance}
-  .arrow{width:84px;height:92px;color:var(--gold);margin:6px 0 4px 64px}
-  .qr{display:block;width:100%;max-width:320px;border-radius:18px;background:#fff;padding:6px;
+  .report h2{font-weight:700;font-size:30px;line-height:1.15;letter-spacing:-.015em;max-width:16ch;text-wrap:balance}
+  .arrow{width:56px;height:72px;color:var(--gold);margin:10px 0 8px}
+  /* as big as the column allows, but always fits on screen with the heading */
+  .qr{display:block;width:100%;max-width:min(460px,calc(100vh - 300px));min-width:240px;border-radius:20px;background:#fff;padding:8px;
     box-shadow:0 1px 2px rgba(0,0,0,.06),0 10px 30px -12px rgba(0,0,0,.28)}
   .qr img{display:block;width:100%;height:auto}
   .report .tap{font-size:13px;color:var(--mute);margin-top:14px}
@@ -50,7 +51,8 @@
   .empty .block{opacity:.35}
 
   /* list */
-  .cols,li{display:grid;grid-template-columns:44px 1fr 4ch 4ch 5ch;align-items:baseline;padding:13px 4px}
+  /* fixed px widths (not ch) so the small header and the rows line up exactly */
+  .cols,li{display:grid;grid-template-columns:44px 1fr 40px 40px 52px;align-items:baseline;padding:13px 4px}
   .cols{padding:0 4px 6px;border-bottom:2px solid var(--ink);font-stretch:75%;font-weight:600;font-size:12px;
     letter-spacing:.06em;text-transform:uppercase;color:var(--mute)}
   .cols span:nth-child(n+3){text-align:right}
@@ -68,20 +70,20 @@
     .page{grid-template-columns:minmax(0,560px);gap:64px}
     .report{position:static;order:2;border-top:1px solid var(--rule);padding-top:48px}
     .report h2{font-size:22px}
-    .qr{max-width:260px}
+    .qr{max-width:280px;min-width:0}
   }
   @media (max-width:420px){ .who{font-size:14px}.p1 .who{font-size:16px}.block{font-size:34px}
-    .cols,li{grid-template-columns:34px 1fr 3.5ch 3.5ch 4.5ch} }
+    .cols,li{grid-template-columns:34px 1fr 32px 32px 44px} }
 </style>
 </head>
 <body>
 <div class="page">
 <aside class="report">
   <h2>Scan this to report a ladder game result</h2>
-  <svg class="arrow" viewBox="0 0 84 92" fill="none" stroke="currentColor" stroke-width="4"
+  <svg class="arrow" viewBox="0 0 56 72" fill="none" stroke="currentColor" stroke-width="4"
        stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-    <path d="M70 6C38 8 14 26 22 56c3 11 9 20 16 28"/>
-    <path d="M24 74l14 12 4-18"/>
+    <path d="M10 6Q28 12 28 66"/>
+    <path d="M16 54l12 12 12-12"/>
   </svg>
   <a class="qr" href="https://forms.gle/Ct4Y2RNtsmRKCTSy7" target="_blank" rel="noopener"
      aria-label="Open the game result form">
@@ -96,7 +98,7 @@
     <div class="step p3 empty"><div class="who"></div><div class="pts"></div><div class="block">3</div></div>
   </section>
   <p class="status" id="status" hidden></p>
-  <div class="cols" aria-hidden="true"><span>#</span><span>Player</span><span>W</span><span>GP</span><span>Pts</span></div>
+  <div class="cols" aria-hidden="true"><span>#</span><span>Player</span><span>W</span><span>G</span><span>Pts</span></div>
   <ol id="list"></ol>
 </main>
 </div>
